@@ -1,0 +1,43 @@
+name: Samed Panel APK Builder
+on: [push, workflow_dispatch]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Kodlari Cek
+        uses: actions/checkout@v4
+
+      - name: Java 17 Kurulumu
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Proje Yapisini Kur
+        run: |
+          # Gerekli klasörleri oluştur
+          mkdir -p app/src/main/java/com/samed/panel
+          mkdir -p app/src/main/res/layout
+          
+          # Dosyaları isim hatası olsa bile bul ve taşı (Hata vermez)
+          find . -maxdepth 1 -iname "mainactivity.java" -exec cp {} app/src/main/java/com/samed/panel/MainActivity.java \;
+          find . -maxdepth 1 -iname "bootreceiver.java" -exec cp {} app/src/main/java/com/samed/panel/BootReceiver.java \;
+          find . -maxdepth 1 -iname "androidmanifest.xml" -exec cp {} app/src/main/AndroidManifest.xml \;
+          find . -maxdepth 1 -iname "activity_main.xml" -exec cp {} app/src/main/res/layout/activity_main.xml \;
+          
+          # Wrapper ve build dosyalarını ayarla
+          gradle wrapper --gradle-version 8.5
+          echo "android.useAndroidX=true" > gradle.properties
+          echo "android.enableJetifier=true" >> gradle.properties
+
+      - name: APK Derle
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --stacktrace
+
+      - name: APK Yukle
+        uses: actions/upload-artifact@v4
+        with:
+          name: Samed-Panel-Konum-Guncel
+          path: app/build/outputs/apk/debug/app-debug.apk
